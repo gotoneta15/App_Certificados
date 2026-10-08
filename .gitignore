@@ -1,0 +1,15 @@
+# Variables de entorno y credenciales
+.env
+
+# Entornos virtuales
+.venv/
+
+# Archivos compilados y cache de Python
+__pycache__/
+*.pyc
+
+# Vercel
+.vercel/
+
+# Certificados y salidas generadas
+SALIDA/
