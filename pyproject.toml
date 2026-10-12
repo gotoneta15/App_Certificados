@@ -1,0 +1,13 @@
+[project]
+name = "app-certificados"
+version = "0.1.0"
+description = "App de Certificados de la Academia"
+requires-python = ">=3.12"
+dependencies = [
+    "flask",
+    "pandas",
+    "openpyxl",
+    "fpdf2",
+    "psycopg[binary]",
+    "python-dotenv",
+]

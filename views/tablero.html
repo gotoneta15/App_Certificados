@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+
+{% block title %}Tablero de Control - Sistema de Certificados{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Encabezado del Tablero */
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .dashboard-title h1 {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--color-navy);
+        letter-spacing: -0.02em;
+    }
+
+    .dashboard-title p {
+        color: var(--color-text-muted);
+        font-size: 0.95rem;
+        margin-top: 0.25rem;
+    }
+
+    .dashboard-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    /* Grilla de Tarjetas de Control / KPIs */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .kpi-card {
+        background-color: var(--color-card-bg);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem 1.5rem;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--color-border);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .kpi-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+    }
+
+    .kpi-card.kpi-aprobacion::before { background-color: var(--color-gold); }
+    .kpi-card.kpi-participacion::before { background-color: var(--color-navy-light); }
+    .kpi-card.kpi-sin-certificado::before { background-color: #94a3b8; }
+    .kpi-card.kpi-inconsistencias::before { background-color: var(--color-danger); }
+
+    .kpi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .kpi-label {
+        font-size: 0.825rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-text-muted);
+    }
+
+    .kpi-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .kpi-aprobacion .kpi-icon {
+        background-color: var(--color-gold-subtle);
+        color: var(--color-gold);
+    }
+
+    .kpi-participacion .kpi-icon {
+        background-color: #e0f2fe;
+        color: #0284c7;
+    }
+
+    .kpi-sin-certificado .kpi-icon {
+        background-color: #f1f5f9;
+        color: #64748b;
+    }
+
+    .kpi-inconsistencias .kpi-icon {
+        background-color: var(--color-danger-bg);
+        color: var(--color-danger);
+    }
+
+    .kpi-value {
+        font-size: 2.25rem;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--color-navy);
+        margin-bottom: 0.35rem;
+    }
+
+    .kpi-subtext {
+        font-size: 0.8rem;
+        color: var(--color-text-muted);
+    }
+
+    /* Recuadro de Inconsistencias / Alertas */
+    .inconsistencias-panel {
+        background-color: #ffffff;
+        border: 1px solid var(--color-danger-border);
+        border-left: 5px solid var(--color-danger);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .inconsistencias-title {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--color-danger);
+        margin-bottom: 0.5rem;
+    }
+
+    .inconsistencias-desc {
+        font-size: 0.9rem;
+        color: #4b5563;
+        margin-bottom: 1.25rem;
+    }
+
+    .inconsistencias-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1rem;
+    }
+
+    .inconsistencia-item {
+        background-color: var(--color-danger-bg);
+        border: 1px solid #fecaca;
+        border-radius: var(--radius-md);
+        padding: 1rem;
+    }
+
+    .inconsistencia-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.4rem;
+    }
+
+    .inconsistencia-tipo {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        background-color: #fee2e2;
+        color: var(--color-danger);
+    }
+
+    .inconsistencia-id {
+        font-family: monospace;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--color-navy);
+    }
+
+    .inconsistencia-nombre {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+
+    .inconsistencia-detalle {
+        font-size: 0.825rem;
+        color: #4b5563;
+        line-height: 1.4;
+    }
+
+    /* Tabla de Estudiantes */
+    .table-section {
+        background-color: var(--color-card-bg);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--color-border);
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .table-header h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--color-navy);
+    }
+
+    .table-count-badge {
+        font-size: 0.8rem;
+        font-weight: 600;
+        background-color: #e2e8f0;
+        color: var(--color-text-main);
+        padding: 0.25rem 0.6rem;
+        border-radius: 12px;
+    }
+
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    table.data-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.9rem;
+    }
+
+    table.data-table thead th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.775rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.9rem 1.25rem;
+        border-bottom: 2px solid var(--color-border);
+        white-space: nowrap;
+    }
+
+    table.data-table tbody tr {
+        border-bottom: 1px solid var(--color-border);
+        transition: background-color 0.15s ease;
+    }
+
+    table.data-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    table.data-table tbody tr.row-inconsistente {
+        background-color: #fffbfb;
+    }
+
+    table.data-table tbody td {
+        padding: 1rem 1.25rem;
+        vertical-align: middle;
+        color: var(--color-text-main);
+    }
+
+    .id-tag {
+        font-family: monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--color-navy);
+        background-color: #f1f5f9;
+        padding: 0.2rem 0.45rem;
+        border-radius: 4px;
+    }
+
+    .student-name {
+        font-weight: 600;
+        color: var(--color-navy);
+        display: block;
+    }
+
+    .student-email {
+        font-size: 0.775rem;
+        color: var(--color-text-muted);
+        display: block;
+    }
+
+    /* Badges de Estado */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.65rem;
+        border-radius: 9999px;
+        font-size: 0.775rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .badge-aprobacion {
+        background-color: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+    }
+
+    .badge-participacion {
+        background-color: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+    }
+
+    .badge-sin-certificado {
+        background-color: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+    }
+
+    .badge-alerta {
+        background-color: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+    .badge-muted {
+        background-color: #f3f4f6;
+        color: #9ca3af;
+        border: 1px solid #e5e7eb;
+        font-size: 0.775rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+
+    .badge-aprobacion .badge-dot { background-color: #059669; }
+    .badge-participacion .badge-dot { background-color: #2563eb; }
+    .badge-sin-certificado .badge-dot { background-color: #64748b; }
+    .badge-alerta .badge-dot { background-color: #dc2626; }
+
+    .score-value {
+        font-weight: 700;
+    }
+
+    .score-high { color: #065f46; }
+    .score-mid { color: var(--color-navy); }
+    .score-low { color: #b91c1c; }
+
+    @media (max-width: 900px) {
+        .dashboard-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .dashboard-actions {
+            width: 100%;
+        }
+        .dashboard-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Encabezado del Tablero y Acción Masiva -->
+<section class="dashboard-header">
+    <div class="dashboard-title">
+        <h1>Tablero de Control Académico</h1>
+        <p>Monitoreo de estado de estudiantes, evaluación de requisitos y emisión oficial de certificados.</p>
+    </div>
+    <div class="dashboard-actions">
+        <a href="{{ url_for('certificados.descargar_todos') }}" class="btn btn-gold" id="btn-descargar-todos" title="Descargar paquete ZIP con todos los certificados elegibles">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Descargar todos los certificados (.ZIP)
+        </a>
+    </div>
+</section>
+
+<!-- Tarjetas Superiores / KPIs de Cifras de Control -->
+<section class="kpi-grid">
+    <!-- Tarjeta Aprobación -->
+    <div class="kpi-card kpi-aprobacion">
+        <div class="kpi-header">
+            <span class="kpi-label">Aprobación</span>
+            <div class="kpi-icon" title="Nota &ge; 70 y Asistencia &ge; 80%">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            </div>
+        </div>
+        <div class="kpi-value">{{ resumen.aprobacion }}</div>
+        <div class="kpi-subtext">Certificados con mérito de aprobación</div>
+    </div>
+
+    <!-- Tarjeta Participación -->
+    <div class="kpi-card kpi-participacion">
+        <div class="kpi-header">
+            <span class="kpi-label">Participación</span>
+            <div class="kpi-icon" title="Nota < 70 y Asistencia &ge; 80%">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 14 14"></polyline>
+                </svg>
+            </div>
+        </div>
+        <div class="kpi-value">{{ resumen.participacion }}</div>
+        <div class="kpi-subtext">Certificados por cumplimiento de asistencia</div>
+    </div>
+
+    <!-- Tarjeta Sin Certificado -->
+    <div class="kpi-card kpi-sin-certificado">
+        <div class="kpi-header">
+            <span class="kpi-label">Sin Certificado</span>
+            <div class="kpi-icon" title="Asistencia < 80%">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="kpi-value">{{ resumen.sin_certificado }}</div>
+        <div class="kpi-subtext">Asistencia insuficiente (&lt; 80%)</div>
+    </div>
+
+    <!-- Tarjeta Inconsistencias -->
+    <div class="kpi-card kpi-inconsistencias">
+        <div class="kpi-header">
+            <span class="kpi-label">Inconsistencias</span>
+            <div class="kpi-icon" title="Casos excluidos que requieren atención">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="kpi-value">{{ resumen.inconsistencias }}</div>
+        <div class="kpi-subtext">Alertas de datos (no certifican)</div>
+    </div>
+</section>
+
+<!-- Sección de Inconsistencias / Alertas (si existen) -->
+{% if inconsistencias %}
+<section class="inconsistencias-panel" role="alert">
+    <div class="inconsistencias-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <span>Alertas de Inconsistencias Detectadas ({{ inconsistencias|length }})</span>
+    </div>
+    <p class="inconsistencias-desc">
+        Los siguientes registros no cumplen las condiciones de integridad académica establecidas en las reglas de negocio (R6). Han sido bloqueados de la emisión de certificados:
+    </p>
+    <div class="inconsistencias-list">
+        {% for inc in inconsistencias %}
+        <div class="inconsistencia-item">
+            <div class="inconsistencia-item-header">
+                <span class="inconsistencia-tipo">{{ inc.tipo }}</span>
+                <span class="inconsistencia-id">{{ inc.identificacion }}</span>
+            </div>
+            <div class="inconsistencia-nombre">{{ inc.nombre }}</div>
+            <div class="inconsistencia-detalle">
+                {{ inc.descripcion }}
+                {% if inc.promedio_asistencia is not none %}
+                    <br><strong>Asistencia registrada:</strong> {{ inc.promedio_asistencia }}%
+                {% endif %}
+                {% if inc.programa %}
+                    <br><strong>Programa:</strong> {{ inc.programa }}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Tabla Consolidada de Estudiantes -->
+<section class="table-section">
+    <div class="table-header">
+        <h2>Listado Consolidado de Estudiantes</h2>
+        <span class="table-count-badge">{{ estudiantes|length }} Estudiantes Registrados</span>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Identificación</th>
+                    <th>Nombre Completo</th>
+                    <th>Programa</th>
+                    <th>Cohorte</th>
+                    <th>Promedio Nota</th>
+                    <th>Asistencia (%)</th>
+                    <th>Estado</th>
+                    <th style="text-align: right;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for est in estudiantes %}
+                <tr {% if est.tiene_inconsistencia %}class="row-inconsistente"{% endif %}>
+                    <td>
+                        <span class="id-tag">{{ est.identificacion }}</span>
+                    </td>
+                    <td>
+                        <span class="student-name">{{ est.nombre_completo }}</span>
+                        {% if est.correo %}
+                            <span class="student-email">{{ est.correo }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ est.programa }}</td>
+                    <td>{{ est.cohorte or '—' }}</td>
+                    <td>
+                        {% if est.promedio_nota is not none %}
+                            <span class="score-value {% if est.promedio_nota >= 70 %}score-high{% else %}score-low{% endif %}">
+                                {{ est.promedio_nota }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if est.promedio_asistencia is not none %}
+                            <span class="score-value {% if est.promedio_asistencia >= 80 %}score-high{% elif est.promedio_asistencia < 50 %}score-low{% else %}score-mid{% endif %}">
+                                {{ est.promedio_asistencia }}%
+                            </span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if est.estado == 'Aprobación' %}
+                            <span class="badge badge-aprobacion">
+                                <span class="badge-dot"></span>
+                                Aprobación
+                            </span>
+                        {% elif est.estado == 'Participación' %}
+                            <span class="badge badge-participacion">
+                                <span class="badge-dot"></span>
+                                Participación
+                            </span>
+                        {% elif est.estado == 'Sin certificado' and not est.tiene_inconsistencia %}
+                            <span class="badge badge-sin-certificado">
+                                <span class="badge-dot"></span>
+                                Sin certificado
+                            </span>
+                        {% else %}
+                            <span class="badge badge-alerta" title="{{ est.motivo_inconsistencia or est.estado }}">
+                                <span class="badge-dot"></span>
+                                {{ est.estado }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        {% if est.es_certificable %}
+                            <a href="/certificado/{{ est.identificacion }}/{{ est.programa }}" target="_blank" class="btn btn-sm btn-gold" title="Abrir certificado individual en PDF">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                                Ver PDF
+                            </a>
+                        {% else %}
+                            <span class="badge-muted" title="No elegible para emisión de certificado">No aplica</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center" style="padding: 2.5rem; color: var(--color-text-muted);">
+                        No hay registros de estudiantes disponibles. Utilice la opción de <a href="{{ url_for('tablero.cargar') }}">Cargar Archivos</a> para ingresar información.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
