@@ -4,9 +4,16 @@ Punto de entrada de la aplicación web.
 """
 
 import os
+from pathlib import Path
 from flask import Flask
 from controllers.tablero_controller import tablero_bp
 from controllers.certificados_controller import certificados_bp
+
+# Carpeta del proyecto: donde está este archivo app.py.
+# Así las rutas relativas (INSUMOS/, views/) funcionan
+# sin importar desde qué carpeta se arranque la app.
+BASE_DIR = Path(__file__).resolve().parent
+os.chdir(BASE_DIR)
 
 
 def create_app() -> Flask:

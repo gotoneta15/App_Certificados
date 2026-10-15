@@ -26,10 +26,12 @@ def calcular_promedios(evaluaciones: List[Dict[str, Any]]) -> Tuple[float, float
     if not evaluaciones:
         return 0.0, 0.0
 
+    # VARIABLES tipo número: sumo las notas y las asistencias
     total_notas = sum(float(ev.get("nota", 0.0)) for ev in evaluaciones)
     total_asist = sum(float(ev.get("asistencia_pct", 0.0)) for ev in evaluaciones)
-    n = len(evaluaciones)
+    n = len(evaluaciones)  # VARIABLE tipo número: cantidad de módulos cursados
 
+    # promedio = suma / cantidad, redondeado a 2 decimales
     promedio_nota = round(total_notas / n, 2)
     promedio_asistencia = round(total_asist / n, 2)
     return promedio_nota, promedio_asistencia
@@ -42,6 +44,7 @@ def clasificar_estado(promedio_nota: float, promedio_asistencia: float) -> str:
     - R4: Participación (promedio < 70 y asistencia >= 80).
     - R5: Sin certificado (asistencia < 80).
     """
+    # CONDICIONALES: primero miro la asistencia, luego la nota (límites incluyen)
     if promedio_asistencia >= ASISTENCIA_MINIMA:
         if promedio_nota >= NOTA_MINIMA:
             return ESTADO_APROBACION
@@ -152,6 +155,7 @@ def procesar_datos_tablero(
     conteo_participacion = 0
     conteo_sin_certificado = 0
 
+    # BUCLE: recorro cada estudiante del maestro, uno por uno
     for ident, est in sorted(
         maestro_por_id.items(), key=lambda x: x[1].get("nombre_completo", "")
     ):

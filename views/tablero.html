@@ -233,6 +233,17 @@
         color: var(--color-navy);
     }
 
+    .filter-select {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--color-navy);
+        background-color: #ffffff;
+        border: 1px solid var(--color-border-dark);
+        border-radius: 6px;
+        padding: 0.4rem 0.6rem;
+        cursor: pointer;
+    }
+
     .table-count-badge {
         font-size: 0.8rem;
         font-weight: 600;
@@ -332,9 +343,9 @@
     }
 
     .badge-sin-certificado {
-        background-color: #f1f5f9;
-        color: #475569;
-        border: 1px solid #cbd5e1;
+        background-color: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
     }
 
     .badge-alerta {
@@ -361,7 +372,7 @@
 
     .badge-aprobacion .badge-dot { background-color: #059669; }
     .badge-participacion .badge-dot { background-color: #2563eb; }
-    .badge-sin-certificado .badge-dot { background-color: #64748b; }
+    .badge-sin-certificado .badge-dot { background-color: #dc2626; }
     .badge-alerta .badge-dot { background-color: #dc2626; }
 
     .score-value {
@@ -511,7 +522,16 @@
 <section class="table-section">
     <div class="table-header">
         <h2>Listado Consolidado de Estudiantes</h2>
-        <span class="table-count-badge">{{ estudiantes|length }} Estudiantes Registrados</span>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <label for="filtro-programa" style="font-size: 0.85rem; font-weight: 600; color: var(--color-navy);">Programa:</label>
+            <select id="filtro-programa" class="filter-select" aria-label="Filtrar por programa">
+                <option value="">Todos los programas</option>
+                {% for programa in estudiantes|map(attribute='programa')|unique|list|sort %}
+                <option value="{{ programa }}">{{ programa }}</option>
+                {% endfor %}
+            </select>
+            <span class="table-count-badge" id="conteo-visible">{{ estudiantes|length }} Estudiantes Registrados</span>
+        </div>
     </div>
     <div class="table-responsive">
         <table class="data-table">
@@ -521,6 +541,7 @@
                     <th>Nombre Completo</th>
                     <th>Programa</th>
                     <th>Cohorte</th>
+                    <th>Módulos</th>
                     <th>Promedio Nota</th>
                     <th>Asistencia (%)</th>
                     <th>Estado</th>
@@ -529,7 +550,7 @@
             </thead>
             <tbody>
                 {% for est in estudiantes %}
-                <tr {% if est.tiene_inconsistencia %}class="row-inconsistente"{% endif %}>
+                <tr data-programa="{{ est.programa }}" {% if est.tiene_inconsistencia %}class="row-inconsistente"{% endif %}>
                     <td>
                         <span class="id-tag">{{ est.identificacion }}</span>
                     </td>
@@ -541,6 +562,7 @@
                     </td>
                     <td>{{ est.programa }}</td>
                     <td>{{ est.cohorte or '—' }}</td>
+                    <td>{{ est.total_evaluaciones if est.total_evaluaciones is not none else '—' }}</td>
                     <td>
                         {% if est.promedio_nota is not none %}
                             <span class="score-value {% if est.promedio_nota >= 70 %}score-high{% else %}score-low{% endif %}">
@@ -601,7 +623,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" class="text-center" style="padding: 2.5rem; color: var(--color-text-muted);">
+                    <td colspan="9" class="text-center" style="padding: 2.5rem; color: var(--color-text-muted);">
                         No hay registros de estudiantes disponibles. Utilice la opción de <a href="{{ url_for('tablero.cargar') }}">Cargar Archivos</a> para ingresar información.
                     </td>
                 </tr>
@@ -610,4 +632,23 @@
         </table>
     </div>
 </section>
+
+<script>
+// Filtro por programa: muestra solo las filas del programa elegido.
+(function () {
+    var selecto = document.getElementById('filtro-programa');
+    var conteo = document.getElementById('conteo-visible');
+    if (!selecto) { return; }
+    selecto.addEventListener('change', function () {
+        var elegido = selecto.value;
+        var visibles = 0;
+        document.querySelectorAll('table.data-table tbody tr[data-programa]').forEach(function (fila) {
+            var coincide = (elegido === '') || (fila.getAttribute('data-programa') === elegido);
+            fila.style.display = coincide ? '' : 'none';
+            if (coincide) { visibles += 1; }
+        });
+        if (conteo) { conteo.textContent = visibles + ' Estudiantes Registrados'; }
+    });
+})();
+</script>
 {% endblock %}
