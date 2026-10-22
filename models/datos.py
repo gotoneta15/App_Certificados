@@ -14,7 +14,13 @@ from psycopg.rows import dict_row
 
 load_dotenv()
 
-RUTA_SQLITE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "academia.db")
+# En Vercel el disco del proyecto es de solo lectura. La carpeta /tmp sí se
+# puede escribir, así que uso una base SQLite temporal cuando corre en Vercel.
+RUTA_SQLITE = (
+    "/tmp/academia.db"
+    if os.getenv("VERCEL")
+    else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "academia.db")
+)
 
 
 def get_connection():

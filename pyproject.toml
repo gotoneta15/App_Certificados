@@ -16,3 +16,8 @@ dependencies = [
 dev = [
     "pytest>=9.1.1",
 ]
+
+# Vercel detecta Flask automáticamente. Esta línea le indica que la app está
+# en app.py y que el objeto Flask se llama "app".
+[tool.vercel]
+entrypoint = "app:app"
