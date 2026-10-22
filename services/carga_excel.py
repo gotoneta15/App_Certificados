@@ -31,6 +31,12 @@ COLUMNAS_EVALUACIONES = [
     "Fecha_Cierre",
 ]
 
+# Ruta absoluta a la carpeta de insumos. Así funciona igual en Windows y en
+# Linux/Vercel, donde los nombres de carpeta distinguen mayúsculas de minúsculas.
+DIRECTORIO_INSUMOS = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "INSUMOS"
+)
+
 
 def limpiar_identificacion(val: Any) -> str:
     """
@@ -141,6 +147,31 @@ def procesar_excel_evaluaciones(origen: Any) -> list[Dict[str, Any]]:
     return evaluaciones
 
 
+def leer_datos_excel(
+    ruta_maestro: Optional[Union[str, Any]] = None,
+    ruta_evaluaciones: Optional[Union[str, Any]] = None,
+) -> tuple[list[Dict[str, Any]], list[Dict[str, Any]]]:
+    """
+    Lee los dos Excel y devuelve las listas de estudiantes y evaluaciones.
+    Acepta rutas, archivos abiertos o buffers en memoria (por ejemplo BytesIO).
+    Si no se le pasa un archivo, lee el Excel oficial de la carpeta INSUMOS.
+    """
+    # Si no llega el maestro, uso el archivo de fábrica.
+    if ruta_maestro is None:
+        ruta_maestro = os.path.join(DIRECTORIO_INSUMOS, "Maestro_Estudiantes.xlsx")
+
+    # Si no llegan las evaluaciones, uso el archivo de fábrica.
+    if ruta_evaluaciones is None:
+        ruta_evaluaciones = os.path.join(
+            DIRECTORIO_INSUMOS, "Registro_Evaluaciones.xlsx"
+        )
+
+    # Reutilizo las funciones de lectura y validación que ya existían.
+    lista_estudiantes = procesar_excel_estudiantes(ruta_maestro)
+    lista_evaluaciones = procesar_excel_evaluaciones(ruta_evaluaciones)
+    return lista_estudiantes, lista_evaluaciones
+
+
 def cargar_datos_desde_excel(
     ruta_maestro: Optional[Union[str, Any]] = None,
     ruta_evaluaciones: Optional[Union[str, Any]] = None,
@@ -148,15 +179,12 @@ def cargar_datos_desde_excel(
     """
     Orquesta la lectura de ambos Excel, la creación de tablas si no existen,
     el vaciado previo de las tablas y la inserción de los nuevos datos.
+    Se usa para la carga inicial y el script cargar_datos.py.
     """
-    if ruta_maestro is None:
-        ruta_maestro = os.path.join("insumos", "Maestro_Estudiantes.xlsx")
-    if ruta_evaluaciones is None:
-        ruta_evaluaciones = os.path.join("insumos", "Registro_Evaluaciones.xlsx")
-
-    # 1. Procesar datos desde los Excel
-    lista_estudiantes = procesar_excel_estudiantes(ruta_maestro)
-    lista_evaluaciones = procesar_excel_evaluaciones(ruta_evaluaciones)
+    # 1. Procesar datos desde los Excel (subidos o de la carpeta INSUMOS)
+    lista_estudiantes, lista_evaluaciones = leer_datos_excel(
+        ruta_maestro, ruta_evaluaciones
+    )
 
     # 2. Asegurar tablas y vaciar datos existentes
     crear_tablas()

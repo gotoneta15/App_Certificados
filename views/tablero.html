@@ -383,6 +383,130 @@
     .score-mid { color: var(--color-navy); }
     .score-low { color: #b91c1c; }
 
+    /* Aviso verde cuando el tablero muestra datos subidos en memoria */
+    .aviso-datos-subidos {
+        margin-bottom: 1.5rem;
+        align-items: flex-start;
+    }
+
+    /* Panel de administrador para cargar los dos Excel */
+    .admin-panel {
+        background-color: var(--color-card-bg);
+        border: 1px solid var(--color-border);
+        border-left: 5px solid var(--color-gold);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .admin-panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .admin-panel-header h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--color-navy);
+        margin-bottom: 0.25rem;
+    }
+
+    .admin-panel-header p {
+        font-size: 0.875rem;
+        color: var(--color-text-muted);
+        max-width: 620px;
+    }
+
+    .admin-origin {
+        background-color: var(--color-gold-subtle);
+        border: 1px solid rgba(184, 146, 61, 0.35);
+        border-radius: var(--radius-md);
+        padding: 0.65rem 0.85rem;
+        font-size: 0.8rem;
+        color: var(--color-text-main);
+        max-width: 360px;
+    }
+
+    .admin-origin-label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-warning);
+        margin-bottom: 0.15rem;
+    }
+
+    .admin-origin strong {
+        display: block;
+        overflow-wrap: anywhere;
+    }
+
+    .admin-panel-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+    }
+
+    .admin-field label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--color-navy);
+        margin-bottom: 0.35rem;
+    }
+
+    .admin-field small {
+        display: block;
+        color: var(--color-text-muted);
+        font-size: 0.775rem;
+        margin-top: 0.35rem;
+    }
+
+    .admin-file {
+        width: 100%;
+        padding: 0.6rem;
+        border: 1px dashed var(--color-border-dark);
+        border-radius: 6px;
+        background-color: #fafbfc;
+        font-size: 0.85rem;
+        color: var(--color-text-main);
+        cursor: pointer;
+    }
+
+    .admin-file:hover {
+        border-color: var(--color-gold);
+        background-color: var(--color-gold-subtle);
+    }
+
+    .admin-panel-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-top: 1.25rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--color-border);
+    }
+
+    .factory-link {
+        margin-left: auto;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--color-navy);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
+    .factory-link:hover {
+        color: var(--color-gold);
+    }
+
     @media (max-width: 900px) {
         .dashboard-header {
             flex-direction: column;
@@ -399,12 +523,22 @@
 {% endblock %}
 
 {% block content %}
+{% if datos_subidos %}
+<div class="alert alert-success aviso-datos-subidos" role="status">
+    <span>
+        <strong>Estos resultados viven solo en esta pantalla.</strong>
+        Al recargar la app se vuelven a mostrar los datos de fábrica, porque todavía no hay un lugar donde guardarlos.
+    </span>
+</div>
+{% endif %}
+
 <!-- Encabezado del Tablero y Acción Masiva -->
 <section class="dashboard-header">
     <div class="dashboard-title">
         <h1>Tablero de Control Académico</h1>
         <p>Monitoreo de estado de estudiantes, evaluación de requisitos y emisión oficial de certificados.</p>
     </div>
+    {% if session.get('rol') == 'admin' and not datos_subidos %}
     <div class="dashboard-actions">
         <a href="{{ url_for('certificados.descargar_todos') }}" class="btn btn-gold" id="btn-descargar-todos" title="Descargar paquete ZIP con todos los certificados elegibles">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -415,7 +549,72 @@
             Descargar todos los certificados (.ZIP)
         </a>
     </div>
+    {% endif %}
 </section>
+
+<!-- Panel de administrador: solo visible para el rol admin -->
+{% if session.get('rol') == 'admin' %}
+<section class="admin-panel" id="panel-admin">
+    <div class="admin-panel-header">
+        <div>
+            <h2>Panel de administrador</h2>
+            <p>
+                Suba los dos Excel para recalcular el tablero. Los archivos se leen en memoria
+                y no se guardan en el disco; los resultados tampoco se almacenan.
+                El tamaño máximo por carga es de 4 MB.
+            </p>
+        </div>
+        <div class="admin-origin">
+            <span class="admin-origin-label">Origen de los datos en pantalla</span>
+            <strong>{{ origen_datos|default('Datos de fábrica (carpeta INSUMOS)') }}</strong>
+        </div>
+    </div>
+
+    <form action="{{ url_for('tablero.cargar') }}" method="POST" enctype="multipart/form-data">
+        <div class="admin-panel-grid">
+            <div class="admin-field">
+                <label for="archivo_maestro">Maestro de estudiantes</label>
+                <input
+                    type="file"
+                    id="archivo_maestro"
+                    name="archivo_maestro"
+                    class="admin-file"
+                    accept=".xlsx,.xls"
+                >
+                <small>Hoja «Estudiantes»: Identificacion, Nombre_Completo, Correo, Programa y Cohorte.</small>
+            </div>
+
+            <div class="admin-field">
+                <label for="archivo_evaluaciones">Registro de evaluaciones</label>
+                <input
+                    type="file"
+                    id="archivo_evaluaciones"
+                    name="archivo_evaluaciones"
+                    class="admin-file"
+                    accept=".xlsx,.xls"
+                >
+                <small>Hoja «Evaluaciones»: Identificacion, Programa, Modulo, Nota, Asistencia_Pct y Fecha_Cierre.</small>
+            </div>
+        </div>
+
+        <div class="admin-panel-actions">
+            <button type="submit" name="accion" value="ver" class="btn btn-gold">
+                Procesar y ver en pantalla
+            </button>
+            <button type="submit" name="accion" value="excel" class="btn btn-navy">
+                Procesar y descargar Excel
+            </button>
+            <a
+                href="{{ url_for('tablero.cargar', accion='excel') }}"
+                class="factory-link"
+                title="Descargar un Excel con los resultados de los datos de fábrica"
+            >
+                Descargar resultados de los datos de fábrica
+            </a>
+        </div>
+    </form>
+</section>
+{% endif %}
 
 <!-- Tarjetas Superiores / KPIs de Cifras de Control -->
 <section class="kpi-grid">
@@ -481,8 +680,8 @@
     </div>
 </section>
 
-<!-- Sección de Inconsistencias / Alertas (si existen) -->
-{% if inconsistencias %}
+<!-- Sección de Inconsistencias / Alertas (solo para administradores) -->
+{% if inconsistencias and session.get('rol') == 'admin' %}
 <section class="inconsistencias-panel" role="alert">
     <div class="inconsistencias-title">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -605,7 +804,7 @@
                         {% endif %}
                     </td>
                     <td style="text-align: right;">
-                        {% if est.es_certificable %}
+                        {% if est.es_certificable and not datos_subidos %}
                             <a href="/certificado/{{ est.identificacion }}/{{ est.programa }}" target="_blank" class="btn btn-sm btn-gold" title="Abrir certificado individual en PDF">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -616,6 +815,8 @@
                                 </svg>
                                 Ver PDF
                             </a>
+                        {% elif est.es_certificable and datos_subidos %}
+                            <span class="badge-muted" title="Los certificados PDF se generan con los datos de fábrica; estos resultados solo están en pantalla">Solo pantalla</span>
                         {% else %}
                             <span class="badge-muted" title="No elegible para emisión de certificado">No aplica</span>
                         {% endif %}

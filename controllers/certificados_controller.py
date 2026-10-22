@@ -8,6 +8,7 @@ import io
 import zipfile
 import re
 from flask import Blueprint, abort, jsonify, send_file, request, flash, redirect, url_for
+from controllers.auth_controller import requiere_login, solo_admin
 from models.certificados import (
     obtener_estudiante_para_certificado,
     obtener_certificados_validos,
@@ -27,6 +28,7 @@ def _limpiar_nombre_archivo(cadena: str) -> str:
 
 @certificados_bp.route("/certificado/<identificacion>/<path:programa>", methods=["GET"])
 @certificados_bp.route("/certificado/<identificacion>", methods=["GET"])
+@requiere_login
 def descargar_certificado(identificacion: str, programa: str = ""):
     """
     Genera y entrega el certificado PDF individual para un estudiante elegible.
@@ -56,6 +58,8 @@ def descargar_certificado(identificacion: str, programa: str = ""):
 
 
 @certificados_bp.route("/descargar-todos", methods=["GET"])
+@requiere_login
+@solo_admin
 def descargar_todos():
     """
     Genera un archivo ZIP en memoria con todos los certificados válidos

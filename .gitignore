@@ -13,6 +13,9 @@ __pycache__/
 *.log
 *.bak
 
+# Pruebas automáticas
+.pytest_cache/
+
 # Vercel
 .vercel/
 
